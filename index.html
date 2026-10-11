@@ -70,8 +70,14 @@ h3.gt{margin:12px 0 2px;font-size:.9rem;font-weight:600}
 .tp{position:relative}
 .tbig{text-align:center;font-size:1.9rem;font-weight:600;color:var(--at);margin:2px 0 2px}
 .tc.pcb{width:100%;margin-top:10px;border-style:dashed}
-.tc.pcb.on{background:var(--amb);border-color:var(--amb);color:#1a1200}
-.hr.pc{border-style:dashed}
+.hg{display:inline-block;transform-origin:50% 55%;animation:hgflip 4s ease-in-out infinite}
+@keyframes hgflip{0%,20%{transform:rotate(0)}45%,70%{transform:rotate(180deg)}95%,100%{transform:rotate(360deg)}}
+.tc.pcb{color:#fff;border:1px dashed rgba(255,255,255,.55);font-size:.95rem;font-weight:600;letter-spacing:0}
+.tc.pcb.on{background:rgba(255,255,255,.18);border:1px solid #fff;color:#fff;box-shadow:0 0 14px rgba(255,255,255,.3)}
+.tbig{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.tl2{font-size:.9rem;color:var(--mu);font-weight:500;letter-spacing:0;text-shadow:none}
+.tv.pc{font-size:1.3rem;color:#fff;text-shadow:none;letter-spacing:0;font-weight:600;padding:6px 16px;border-radius:99px;border:1px dashed rgba(255,255,255,.55);background:rgba(255,255,255,.08);box-shadow:0 0 14px rgba(255,255,255,.18)}
+.hr.pc{white-space:nowrap;background:rgba(143,180,201,.1);color:#9fc0d3;border:1px dashed rgba(143,180,201,.5);font-size:.7rem;letter-spacing:.08em;font-weight:500}
 .tl{font-size:.75rem;color:var(--mu);margin:8px 2px 4px;font-weight:500}
 .tg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .tc{min-height:46px;padding:6px 4px;font-weight:600;font-size:.95rem;border-radius:12px;background:var(--cd)}
@@ -187,8 +193,14 @@ input,select{background:rgba(255,255,255,.05)}
 .trash{background:rgba(255,107,87,.08)}
 .nd{color:#ff8a73;text-shadow:0 0 10px rgba(255,107,87,.6)}
 
-.send{background:var(--cd);border:1px solid var(--ln);border-radius:20px;padding:12px 14px 6px;margin:16px 0 10px}
+.send{--c:#1fae5b;--ct:#fff;padding:0;margin:16px 0 14px}
+.sbody{padding:2px 14px 6px}
 .sht{font-weight:700;font-size:1rem;margin:0 0 4px}
+.sht.tap{display:flex;align-items:center;justify-content:space-between;cursor:pointer;min-height:44px;margin:0;-webkit-tap-highlight-color:transparent}
+.so-open .arr2{transform:rotate(180deg)}
+.send.buzz{animation:buzz .35s ease-in-out 2,sring .8s ease-out 2}
+@keyframes buzz{0%,100%{transform:none}20%{transform:translateX(-5px) rotate(-.6deg)}40%{transform:translateX(5px) rotate(.6deg)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes sring{0%{box-shadow:0 0 0 0 rgba(43,217,138,.85)}100%{box-shadow:0 0 0 16px rgba(43,217,138,0)}}
 .srow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--ln)}
 .srow:first-of-type{border-top:0}
 .srow .nm{flex:1;min-width:0}
@@ -222,7 +234,7 @@ input,select{background:rgba(255,255,255,.05)}
 </div></details>
 <h2>Vista previa del mensaje</h2>
 <div id="prev"></div>
-<div class="send" id="send"></div>
+<div class="card send" id="send"></div>
 <div class="bar">
 <button id="copiar" type="button">Copiar</button>
 <button id="snd" type="button" aria-label="Sonido">🔊</button>
@@ -251,30 +263,38 @@ const snd={
  tick(){if(mute)return;tone(740,.05,"square",.05)},
  ok(){if(mute)return;[523,659,784,1047].forEach((f,i)=>tone(f,.14,"sine",.16,i*.09));try{navigator.vibrate([20,40,20])}catch(e){}}
 };
-function fmt(t){if(!t)return"";if(t==="pc")return"Por confirmar";const[h,m]=t.split(":").map(Number);return(h%12||12)+":"+String(m).padStart(2,"0")+" "+(h>=12?"pm":"am")}
+function fmt(t){if(!t)return"";if(t==="pc")return"POR CONFIRMAR";const[h,m]=t.split(":").map(Number);return(h%12||12)+":"+String(m).padStart(2,"0")+" "+(h>=12?"pm":"am")}
 function key(t){if(!t)return 9999;if(t==="pc")return 9000;const[h,m]=t.split(":").map(Number);let k=h*60+m;return k<300?k+1440:k}
 const work=e=>e.on&&e.g!=="desc";
+let SO=false,SLAST=0;try{SO=localStorage.getItem("hn_send_open")==="1"}catch(e){}
 const CT=[["Luis E.","34610735953"],["Scarlett","34614424788"],["Karina","34639792960"]];
 function fmtNum(n){return n.length===11&&n.startsWith("34")?"+34 "+n.slice(2,5)+" "+n.slice(5,8)+" "+n.slice(8):"+"+n}
 function wlink(n){return"https://wa.me/"+n+"?text="+encodeURIComponent(LASTMSG||"")}
 function renderSend(){
  const box=$("send");box.innerHTML="";
- box.append(el("div",{className:"sht",textContent:"Enviar a"}));
+ box.classList.toggle("so-open",SO);
+ const hd=el("div",{className:"ch tap"},[el("b",{textContent:"Enviar a"}),el("span",{className:"arr2",textContent:"▾"})]);
+ hd.setAttribute("role","button");hd.tabIndex=0;hd.setAttribute("aria-expanded",SO);
+ const tg=()=>{SO=!SO;try{localStorage.setItem("hn_send_open",SO?"1":"0")}catch(e){}snd.tick();renderSend()};
+ hd.onclick=tg;hd.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();tg()}};
+ box.append(hd);
+ if(!SO)return;
+ const body=el("div",{className:"sbody"});
  CT.forEach(([nm,num])=>{
   const row=el("div",{className:"srow"});
   const a=el("a",{className:"sbtn"+(SENT[num]?" done":""),href:wlink(num),target:"_blank",rel:"noopener",textContent:SENT[num]?"✓ Enviado":"Enviar"});
   a.onclick=()=>{SENT[num]=true;snd.ok();a.classList.add("done");a.textContent="✓ Enviado"};
   row.append(el("div",{className:"nm"},[el("b",{textContent:nm}),el("small",{textContent:fmtNum(num)})]),a);
-  box.append(row);
+  body.append(row);
  });
  const row=el("div",{className:"srow"});
- const inp=el("input",{type:"tel",placeholder:"Otro número (con código de país)",value:OTHER});inp.setAttribute("inputmode","tel");inp.setAttribute("aria-label","Otro número");
+ const inp=el("input",{type:"tel",placeholder:"Otro número +34...",value:OTHER});inp.setAttribute("inputmode","tel");inp.setAttribute("aria-label","Otro número");
  const a=el("a",{className:"sbtn",target:"_blank",rel:"noopener",textContent:"Enviar"});
  const dg=()=>inp.value.replace(/\D/g,"");
  const upd=()=>{OTHER=inp.value;a.href=wlink(dg());a.classList.remove("done");a.textContent="Enviar"};
  inp.oninput=upd;
  a.onclick=ev=>{if(dg().length<8){ev.preventDefault();inp.focus();snd.del();return}a.classList.add("done");a.textContent="✓ Enviado";snd.ok()};
- upd();row.append(inp,a);box.append(row);
+ upd();row.append(inp,a);body.append(row);box.append(body);
 }
 function restAll(){return S.emps.filter(e=>!work(e)&&e.n.trim()).sort((a,b)=>a.n.localeCompare(b.n))}
 function grupo(g){return S.emps.filter(e=>e.on&&e.g===g&&e.n.trim()).sort((a,b)=>key(a.t)-key(b.t))}
@@ -286,7 +306,7 @@ function msg(){
  const bloque=(ids,cab)=>{
   if(!ids.some(g=>grupo(g).length))return;
   L.push(cab,"");
-  ids.forEach(g=>{const a=grupo(g);if(!a.length)return;L.push("📍 "+gl(g)[1].toUpperCase());a.forEach(e=>L.push("• "+e.n.trim()+(e.t?" — "+(e.t==="pc"?"Por Confirmar":fmt(e.t)):"")));L.push("")});
+  ids.forEach(g=>{const a=grupo(g);if(!a.length)return;L.push("📍 "+gl(g)[1].toUpperCase());a.forEach(e=>L.push("• "+e.n.trim()+(e.t?" — "+fmt(e.t):"")));L.push("")});
  };
  bloque(["norte","sur","noroeste"],"🛵 REPARTIDORES");
  bloque(["cnorte","csur","cnoroeste"],"👨‍🍳 COCINA");
@@ -316,9 +336,10 @@ function timePanel(e,onT){
  const w=el("div",{className:"tp"});
  const pc=()=>e.t==="pc";
  const get=()=>{if(pc())return{H:-1,M:-1,P:"",pc:true};const[h,mi]=(e.t||"19:00").split(":").map(Number);return{H:h%12||12,M:mi,P:h>=12?"pm":"am",pc:false}};
- const big=el("div",{className:"tbig"});
+ const tv=el("span",{className:"tv"});
+ const big=el("div",{className:"tbig"},[el("span",{className:"tl2",textContent:"Hora:"}),tv]);
  const items=[];
- const draw=()=>{big.textContent=fmt(e.t||"19:00");const c=get();items.forEach(([b,k,v])=>b.classList.toggle("on",c[k]===v))};
+ const draw=()=>{if(pc()){tv.textContent="";tv.append(el("span",{className:"hg",textContent:"⏳"})," Por Confirmar")}else tv.textContent=fmt(e.t||"19:00");tv.classList.toggle("pc",pc());const c=get();items.forEach(([b,k,v])=>b.classList.toggle("on",c[k]===v))};
  const set=o=>{const c=Object.assign(pc()?{H:7,M:0,P:"pm"}:get(),o);let h=c.H%12;if(c.P==="pm")h+=12;e.t=String(h).padStart(2,"0")+":"+String(c.M).padStart(2,"0");snd.tick();onT();draw()};
  const sec=(tit,k,vals,cols,lab)=>{
   w.append(el("div",{className:"tl",textContent:tit}));
@@ -330,7 +351,7 @@ function timePanel(e,onT){
  sec("Hora","H",[1,2,3,4,5,6,7,8,9,10,11,12],6);
  sec("Minutos","M",[0,15,30,45],4,v=>String(v).padStart(2,"0"));
  sec("Momento","P",["am","pm"],2);
- const pb=el("button",{type:"button",className:"tc pcb",textContent:"Por confirmar"});
+ const pb=el("button",{type:"button",className:"tc pcb"},[el("span",{className:"hg",textContent:"⏳"})," Hora Por Confirmar"]);
  pb.onclick=()=>{e.t="pc";snd.tick();onT();draw()};
  items.push([pb,"pc",true]);
  w.append(pb);
@@ -494,6 +515,12 @@ $("nd").onclick=()=>{const b=$("nd");
 $("und").onclick=()=>{if(UNDO){UNDO.forEach(u=>{const e=S.emps.find(z=>z.id===u.id);if(e){e.on=u.on;e.g=u.g;e.t=u.t;e.rest=u.rest}})}
  UNDO=null;clearTimeout(UT);$("toast").hidden=true;snd.add();pinta();prev()};
 pinta();prev();
+try{if("IntersectionObserver" in window){new IntersectionObserver(es=>{es.forEach(en=>{
+ if(!en.isIntersecting||SO)return;
+ const now=Date.now();if(now-SLAST<10000)return;SLAST=now;
+ const b=$("send");b.classList.remove("buzz");void b.offsetWidth;b.classList.add("buzz");setTimeout(()=>b.classList.remove("buzz"),1700);
+ try{if(!matchMedia("(prefers-reduced-motion:reduce)").matches)navigator.vibrate([60,40,60])}catch(e){}
+})},{threshold:.6}).observe($("send"))}}catch(e){}
 (async()=>{try{
  if(!(window.claude&&window.claude.use))return;
  const db=await window.claude.use("db");if(!db)return;
