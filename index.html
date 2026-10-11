@@ -67,6 +67,7 @@ h3.gt{margin:12px 0 2px;font-size:.9rem;font-weight:600}
 .cr.on{border-color:var(--grn);background:color-mix(in srgb,var(--grn) 14%,transparent)}
 .ok{width:100%;margin-top:12px;min-height:50px;background:linear-gradient(135deg,#1fa463,#2bd98a);color:#fff;border:0;font-weight:700;font-size:1rem;border-radius:14px}
 .ok:active,.trash:active{transform:scale(.95)}
+.ok.buzz2{animation:buzz .35s ease-in-out 2,sring .8s ease-out 2}
 .tp{position:relative}
 .tbig{text-align:center;font-size:1.9rem;font-weight:600;color:var(--at);margin:2px 0 2px}
 .tc.pcb{width:100%;margin-top:10px;border-style:dashed}
@@ -374,8 +375,9 @@ function fila(e,g){
  }else w.append(m);
  if(EXP===e.id){
   const c=el("div",{className:"ctl"});
-  if(g!=="desc")c.append(timePanel(e,()=>{hr.textContent=fmt(e.t);hr.classList.toggle("pc",e.t==="pc");if(!hr.parentNode)m.append(hr);prev()}));
-  if(g!=="desc"){const ok=el("button",{type:"button",className:"ok",textContent:"✓ Confirmar"});ok.onclick=()=>{EXP=null;snd.ok();pinta();prev()};c.append(ok);w.append(c)}
+  let okb=null;
+  if(g!=="desc")c.append(timePanel(e,()=>{hr.textContent=fmt(e.t);hr.classList.toggle("pc",e.t==="pc");if(!hr.parentNode)m.append(hr);prev();nudge(okb)}));
+  if(g!=="desc"){const ok=el("button",{type:"button",className:"ok",textContent:"✓ Confirmar"});ok.onclick=()=>{EXP=null;snd.ok();pinta();prev()};okb=ok;c.append(ok);w.append(c)}
  }
  return w;
 }
@@ -427,7 +429,10 @@ function sub(g,ico,tit){
  a.forEach(e=>box.append(fila(e,g)));
  return box;
 }
-function pinta(){
+let NUD=null,NUT=null;
+function buzzBtn(b){b.classList.remove("buzz2");void b.offsetWidth;b.classList.add("buzz2");setTimeout(()=>b.classList.remove("buzz2"),900);try{if(!matchMedia("(prefers-reduced-motion:reduce)").matches)navigator.vibrate(45)}catch(e){}}
+function nudge(b){clearInterval(NUD);clearTimeout(NUT);if(!b)return;NUT=setTimeout(()=>{if(b.isConnected)buzzBtn(b)},400);NUD=setInterval(()=>{if(!b.isConnected){clearInterval(NUD);return}buzzBtn(b)},6000)}
+function pinta(){clearInterval(NUD);clearTimeout(NUT);
  const c=$("lista");c.innerHTML="";
  SEDES.forEach(([id,nom,loc,col,gr,gc,ct])=>{
   const card=el("div",{className:"card"});card.style.cssText="--c:"+col+";--ct:"+ct;
